@@ -1,8 +1,10 @@
 package io.github.victorandrej.tinyioc;
 
-import com.victorandrej.ioc.exception.*;
+
+import io.github.victorandrej.tinyioc.config.Configuration;
 import io.github.victorandrej.tinyioc.exception.*;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
+import io.github.victorandrej.tinyioc.steriotypes.BeanFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +27,7 @@ public class IOCTest {
 
 
     }
+
 
 
     @Test
@@ -177,6 +180,31 @@ public class IOCTest {
     }
 
 
+    @Test
+    public void deve_criar_bean_teste_apartir_da_factory() {
+        assertDoesNotThrow(()->{
+            var ioc = IOCBuilder.configure().bean(BeanFactoryTest.class).build();
+            var instance = ioc.getInstance(ClasseTeste.class);
+            assertNotNull(instance);
+            assertEquals(ClasseTeste.class,instance.getClass());
+
+        });
+
+    }
+
+
+
+
+        @Bean
+    public static class  BeanFactoryTest implements BeanFactory {
+
+        @Override
+        public void create(Configuration configuration) {
+            configuration.bean(new ClasseTeste());
+        }
+    }
+
+
     @Bean
     public static class ClasseNaoRegistrada {
     }
@@ -204,7 +232,7 @@ public class IOCTest {
 
     @Bean
     public static class CircularReference2 {
-        public CircularReference2(CircularReference c3) {
+        public CircularReference2(CircularReference3 c3) {
         }
     }
 

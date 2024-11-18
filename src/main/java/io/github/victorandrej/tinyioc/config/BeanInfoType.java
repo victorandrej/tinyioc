@@ -1,5 +1,8 @@
 package io.github.victorandrej.tinyioc.config;
 
-public enum BeanConfigurationType {
+/**
+ * Tipo de bean info
+ */
+public enum BeanInfoType {
     CLASS,INSTANCE;
 }

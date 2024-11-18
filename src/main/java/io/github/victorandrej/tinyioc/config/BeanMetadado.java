@@ -4,6 +4,9 @@ package io.github.victorandrej.tinyioc.config;
 
 import java.util.Objects;
 
+/**
+ * Bean de metadados de uma instancia registrado no ioc
+ */
 public class BeanMetadado {
     private String name;
     private Class<?> beanClass;

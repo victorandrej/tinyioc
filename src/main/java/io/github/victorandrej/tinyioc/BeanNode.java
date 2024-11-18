@@ -10,6 +10,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class BeanNode {
+
+
     public static BeanNode newInstance() {
         return new BeanNode();
     }
@@ -21,6 +23,7 @@ public class BeanNode {
 
     private final Map<Class<?>, BeanNode> childrenNodes = new HashMap<>();
 
+    private final Map<String, Set<BeanMetadado>> namedChildrenBeanInstance = new HashMap<>();
     private final Map<String, BeanMetadado> beanInstance = new HashMap<>();
     private final Set<BeanMetadado> globalBeanInstance;
     private final Set<BeanMetadado> childrenBeanInstance = new HashSet<>();
@@ -36,7 +39,6 @@ public class BeanNode {
         this.globalNodes = Objects.requireNonNullElse(globalNodes, new HashMap<>());
         this.nodes = new HashMap<>();
         this.globalBeanInstance = Objects.requireNonNullElse(globalBeanInstance, new HashSet<>());
-
     }
 
     private BeanNode resolveSupersNewNode(Class<?> clazz) {
@@ -71,8 +73,9 @@ public class BeanNode {
 
     private void putNode(Class<?> clazz, BeanNode node) {
         this.nodes.put(clazz, node);
-        for (var parent : this.parent)
+        for (var parent : this.parent) {
             parent.childrenNodes.put(clazz, node);
+        }
 
         this.globalNodes.put(clazz, node);
     }
@@ -92,8 +95,16 @@ public class BeanNode {
             throw new DuplicatedBeanException("Bean duplicado nome: {" + beanMetadado.getName()
                     + "} classe: {" + beanMetadado.getBeanClass().getName() + "}");
         this.beanInstance.put(beanMetadado.getName(), beanMetadado);
-        for (var parent : this.parent)
+
+        for (var parent : this.parent) {
             parent.childrenBeanInstance.add(beanMetadado);
+            var set = parent.namedChildrenBeanInstance.get(beanMetadado.getName());
+            if (Objects.isNull(set)) {
+                set = new LinkedHashSet<>();
+                parent.namedChildrenBeanInstance.put(beanMetadado.getName(), set);
+            }
+            set.add(beanMetadado);
+        }
         this.globalBeanInstance.add(beanMetadado);
     }
 
@@ -162,14 +173,10 @@ public class BeanNode {
 
         if (Objects.isNull(response)) {
 
-            var childrenInstance = result.childrenBeanInstance.stream().filter(b -> name.equals(b.getName())).collect(Collectors.toList());
-
-            response = getBean(beanClass, childrenInstance, (c) -> c.iterator().next());
+            var childrenNameMap = result.namedChildrenBeanInstance.get(name);
+            response = getBean(beanClass, childrenNameMap, (c) -> c.iterator().next());
         }
-
         return (T) response.getBeanInstance();
-
-
     }
 
 

@@ -6,8 +6,15 @@ import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+
 public final  class ClassUtil {
     private ClassUtil(){}
+
+    /**
+     * retorna todas as classes contida no pacote
+     * @param rootClassPackage classe do pacote que deve ser escaneado
+     * @return
+     */
      public  static  Set<Class> findAllClasses(Class<?> rootClassPackage) {
         InputStream stream = rootClassPackage.getClassLoader().getSystemClassLoader()
                 .getResourceAsStream(rootClassPackage.getPackageName().replaceAll("[.]", "/"));

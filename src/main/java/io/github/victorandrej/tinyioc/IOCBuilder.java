@@ -1,7 +1,8 @@
 package io.github.victorandrej.tinyioc;
 
-import io.github.victorandrej.tinyioc.config.BeanConfiguration;
+import io.github.victorandrej.tinyioc.config.BeanInfo;
 import io.github.victorandrej.tinyioc.config.Configuration;
+import io.github.victorandrej.tinyioc.config.ConfigurationImpl;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 import io.github.victorandrej.tinyioc.util.ClassUtil;
 
@@ -16,14 +17,14 @@ public final class IOCBuilder {
         return new IOCConfigurationBuilder();
     }
 
-    private static  IOC build(Configuration configuration){
-        if(configuration.getScanNonUsedBeans())
-            scanNonUsedBeans(configuration.getBeans(),configuration.getRootClassPackage());
+    private static  IOC build(ConfigurationImpl configurationImpl){
+        if(configurationImpl.getScanNonUsedBeans())
+            scanNonUsedBeans(configurationImpl.getBeans(), configurationImpl.getRootClassPackage());
 
-        return  new IOC(configuration);
+        return  new IOC(configurationImpl);
     }
 
-    private static void scanNonUsedBeans(LinkedList<BeanConfiguration> beans, Class<?> rootClassPackage) {
+    private static void scanNonUsedBeans(LinkedList<BeanInfo> beans, Class<?> rootClassPackage) {
         ClassUtil.findAllClasses(rootClassPackage).forEach(c->{
             if(c.isAnnotationPresent(Bean.class) &&  !beans.stream().anyMatch(b->b.getBeanClass().equals(c)))
                 System.err.println("Classe anotada como bean mas nao registrada " + c.getName());
@@ -32,25 +33,25 @@ public final class IOCBuilder {
     }
 
 
-    public static class IOCConfigurationBuilder {
+    public static class IOCConfigurationBuilder implements Configuration {
 
-        private final Configuration configuration = new Configuration();
+        private final ConfigurationImpl configurationImpl = new ConfigurationImpl();
         private boolean builded = false;
 
         public IOCConfigurationBuilder bean(Class<?> clazz){
-            configuration.bean(clazz);
+            configurationImpl.bean(clazz);
             return  this;
         }
         public IOCConfigurationBuilder bean(Class<?> clazz,String name){
-            configuration.bean(clazz,name);
+            configurationImpl.bean(clazz,name);
             return  this;
         }
         public IOCConfigurationBuilder bean(Object instance){
-            configuration.bean(instance);
+            configurationImpl.bean(instance);
             return  this;
         }
         public IOCConfigurationBuilder bean(Object instance,String name){
-            configuration.bean(instance,name);
+            configurationImpl.bean(instance,name);
             return  this;
         }
 
@@ -60,12 +61,12 @@ public final class IOCBuilder {
          * @return
          */
         public IOCConfigurationBuilder scanNonUsedBean(Class<?> rootPackageClass){
-            configuration.scanNonUsedBean(rootPackageClass);
+            configurationImpl.scanNonUsedBean(rootPackageClass);
             return  this;
         }
 
         public IOC build(){
-            return  IOCBuilder.build(configuration);
+            return  IOCBuilder.build(configurationImpl);
         }
 
     }

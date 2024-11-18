@@ -1,19 +1,23 @@
 package io.github.victorandrej.tinyioc;
 
-import io.github.victorandrej.tinyioc.config.BeanConfiguration;
-import io.github.victorandrej.tinyioc.config.Configuration;
+import io.github.victorandrej.tinyioc.config.BeanInfo;
+import io.github.victorandrej.tinyioc.config.ConfigurationImpl;
 import io.github.victorandrej.tinyioc.exception.CircularReferenceException;
 import io.github.victorandrej.tinyioc.exception.NoSuchBeanException;
 import io.github.victorandrej.tinyioc.exception.NoSuchConstructorException;
 import io.github.victorandrej.tinyioc.exception.TooManyConstructorsException;
+import io.github.victorandrej.tinyioc.steriotypes.Bean;
+import io.github.victorandrej.tinyioc.steriotypes.BeanFactory;
 
 import java.util.*;
 
+@Bean
 public class IOC {
     BeanNode mainNode = BeanNode.newInstance();
 
-    IOC(Configuration configuration){
-        resolveBeans(configuration.getBeans(), configuration.getClassBeanMap());
+    IOC(ConfigurationImpl configurationImpl) {
+        mainNode.addInstance("ioc",this);
+        resolveBeans(configurationImpl);
     }
 
 
@@ -27,31 +31,37 @@ public class IOC {
 
     }
 
-    private void resolveBeans(LinkedList<BeanConfiguration> beans, Map<Class<?>, BeanConfiguration> beanConfigurationMap) {
-
-
-        for (var  config : beans) {
-
+    private void resolveBeans(ConfigurationImpl configuration) {
+        var beans = configuration.getBeans();
+        var beanConfigurationMap = configuration.getClassBeanMap();
+        for (var i = 0; i < beans.size(); i++) {
+            var config = beans.get(i);
             switch (config.getType()) {
 
                 case INSTANCE -> {
                     mainNode.addInstance(config.getName(), config.getBeanInstance());
+                    if (config.getBeanInstance() instanceof BeanFactory factory) {
+                        factory.create(configuration);
+                    }
+
                 }
                 case CLASS -> {
-                    resolveBeanInstance(config.getBeanClass(), beanConfigurationMap, new Stack<>());
-
+                    var instance = resolveBeanInstance(config.getBeanClass(), beanConfigurationMap, new Stack<>());
+                    if (instance instanceof BeanFactory factory) {
+                        factory.create(configuration);
+                    }
                 }
 
             }
         }
     }
 
-    private Object resolveBeanInstance(Class<?> currClass, Map<Class<?>, BeanConfiguration> beanConfigurationMap, Stack<Class<?>> configStack) {
+    private Object resolveBeanInstance(Class<?> currClass, Map<Class<?>, BeanInfo> beanConfigurationMap, Stack<Class<?>> configStack) {
         Object instance = null;
 
         try {
             instance = mainNode.getInstance(currClass);
-        } catch (NoSuchBeanException  e) {
+        } catch (NoSuchBeanException e) {
         }
         if (Objects.nonNull(instance))
             return instance;
@@ -68,7 +78,7 @@ public class IOC {
         if (currClass.getConstructors().length > 1)
             throw new TooManyConstructorsException("Bean de classe " + currClass + " com mais de 1 construtor");
         else if (currClass.getConstructors().length == 0) {
-            throw new NoSuchConstructorException("Bean de classe " + currClass+ " deve have pelo menos 1 construtor publico" );
+            throw new NoSuchConstructorException("Bean de classe " + currClass + " deve have pelo menos 1 construtor publico");
         }
         var constructor = currClass.getConstructors()[0];
 
