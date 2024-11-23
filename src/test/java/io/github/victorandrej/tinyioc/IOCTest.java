@@ -5,6 +5,7 @@ import io.github.victorandrej.tinyioc.config.Configuration;
 import io.github.victorandrej.tinyioc.exception.*;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 import io.github.victorandrej.tinyioc.steriotypes.BeanFactory;
+import io.github.victorandrej.tinyioc.util.ClassUtilTeste;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -193,7 +194,30 @@ public class IOCTest {
     }
 
 
+    @Test
+    public  void deve_retornar_erro_se_nao_encontrar_bean_para_injecao(){
+        assertThrows(NoSuchBeanException.class,()->{
+            IOCBuilder.configure().bean(ClasseRequerBeanInexistente.class).build();
+        });
 
+
+    }
+
+    @Test
+    public void deve_criar_o_bean_com_referencia_requerida(){
+        assertDoesNotThrow(()-> IOCBuilder.configure().bean(ClasseTeste.class).bean(ClasseComDependencia.class).build());
+    }
+
+    @Bean
+    public  static class ClasseComDependencia{
+       public   ClasseComDependencia(ClasseTeste t){}
+    }
+
+
+    @Bean
+    public  static class ClasseRequerBeanInexistente{
+            public ClasseRequerBeanInexistente(ClasseNaoRegistrada cl){}
+    }
 
         @Bean
     public static class  BeanFactoryTest implements BeanFactory {

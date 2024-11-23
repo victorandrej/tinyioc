@@ -1,9 +1,8 @@
 package io.github.victorandrej.tinyioc.exception;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Stack;
+import io.github.victorandrej.tinyioc.config.BeanInfo;
+
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -16,43 +15,43 @@ public class CircularReferenceException extends RuntimeException {
     private static final char SPACE = ' ';
     private static final char TRACE = '-';
 
-    public static CircularReferenceException newInstance(Stack<Class<?>> classStack, Class<?> errorClass) {
-        return new CircularReferenceException(createMessage(filterNonReference(classStack, errorClass), errorClass));
+    public static CircularReferenceException newInstance(Set<Class<?>> classSet, Class clazz) {
+        return new CircularReferenceException(createMessage(filterNonReference(classSet, clazz)));
     }
 
     /**
      * retira as classes que nao fazem parte da referencia circular
      *
-     * @param classStack
-     * @param errorClass
+     * @param classQueue
+     * @param clazz
      * @return
      */
-    private static Stack<Class<?>> filterNonReference(Stack<Class<?>> classStack, Class<?> errorClass) {
-        Stack<Class<?>> stack = new Stack<>();
+    private static LinkedList<Class<?>>  filterNonReference(Set<Class<?>>  classSet, Class<?> clazz) {
+        LinkedList<Class<?>> queue = new LinkedList<>();
 
         Boolean finded = false;
 
-        for (var clazz : classStack) {
+        for (var currClazz : classSet) {
 
-            finded = finded ? finded : clazz.equals(errorClass);
+            finded = finded ? finded : currClazz.equals(clazz);
 
 
             if (finded)
-                stack.push(clazz);
+                queue.add(currClazz);
         }
-        return stack;
+        return queue;
 
     }
 
-    private static String createMessage(Stack<Class<?>> classStack, Class<?> errorClass) {
+    private static String createMessage(LinkedList<Class<?>>  queueClass) {
         List<String> messages = new ArrayList();
         var highestMessage = 0;
-        for (var i = 0; i < classStack.size(); i++) {
-            var clazz = classStack.get(i);
+        for (var i = 0; i < queueClass.size(); i++) {
+            var clazz = queueClass.get(i);
             String message = "";
             if (i == 0) {
                 message += INIT_ARROW;
-            } else if (i == classStack.size() - 1) {
+            } else if (i == queueClass.size() - 1) {
                 message += insertChar(TRACE, INIT_ARROW.length());
             } else {
                 message += PIPE + insertChar(SPACE, INIT_ARROW.length() - 1);
