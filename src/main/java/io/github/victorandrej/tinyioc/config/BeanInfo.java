@@ -1,5 +1,9 @@
 package io.github.victorandrej.tinyioc.config;
 
+import java.util.Calendar;
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * classe de informacoes dos beans usado na criacao do IOC
  */
@@ -7,7 +11,24 @@ public class BeanInfo {
     private String name;
     private Class<?> beanClass;
     private Object beanInstance;
-    private BeanInfoType type;
+    private BeanResolveState state;
+    private List<ParameterInfo> unsolvedParameters = new LinkedList<>();
+    private Object[] solvedParameters;
+
+    public BeanInfo(String name, Class<?> beanClass, Object beanInstance) {
+        this.name = name;
+        this.beanClass = beanClass;
+        this.beanInstance = beanInstance;
+    }
+
+
+    public BeanInfo(String name, Class<?> clazz) {
+        this(name, clazz, null);
+    }
+
+    public BeanInfo(String name, Object instance) {
+        this(name, instance.getClass(), instance);
+    }
 
     public String getName() {
         return name;
@@ -21,22 +42,27 @@ public class BeanInfo {
         return beanInstance;
     }
 
-    public BeanInfoType getType() {
-        return type;
+    public List<ParameterInfo> getUnsolvedParameters() {
+        return unsolvedParameters;
     }
 
-    public BeanInfo(String name, Class<?> beanClass, Object beanInstance, BeanInfoType type) {
-        this.name = name;
-        this.beanClass = beanClass;
+    public BeanResolveState getState() {
+        return state;
+    }
+
+    public void setState(BeanResolveState state) {
+        this.state = state;
+    }
+
+    public void setBeanInstance(Object beanInstance) {
         this.beanInstance = beanInstance;
-        this.type = type;
     }
 
-
-    public BeanInfo(String name, Class<?> clazz){
-        this(name,clazz,null, BeanInfoType.CLASS);
+    public Object[] getSolvedParameters() {
+        return this.solvedParameters;
     }
-    public BeanInfo(String name, Object instance){
-        this(name,instance.getClass(),instance, BeanInfoType.INSTANCE);
+
+    public void setSolvedParameters(Object[] solvedParameters) {
+        this.solvedParameters = solvedParameters;
     }
 }

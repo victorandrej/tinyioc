@@ -1,14 +1,20 @@
 package io.github.victorandrej.tinyioc;
 
 import io.github.victorandrej.tinyioc.config.BeanInfo;
+import io.github.victorandrej.tinyioc.config.BeanResolveState;
 import io.github.victorandrej.tinyioc.config.ConfigurationImpl;
+import io.github.victorandrej.tinyioc.config.ParameterInfo;
 import io.github.victorandrej.tinyioc.exception.CircularReferenceException;
 import io.github.victorandrej.tinyioc.exception.NoSuchBeanException;
 import io.github.victorandrej.tinyioc.exception.NoSuchConstructorException;
 import io.github.victorandrej.tinyioc.exception.TooManyConstructorsException;
+
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 import io.github.victorandrej.tinyioc.steriotypes.BeanFactory;
 
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Parameter;
 import java.util.*;
 
 @Bean
@@ -16,7 +22,7 @@ public class IOC {
     BeanNode mainNode = BeanNode.newInstance();
 
     IOC(ConfigurationImpl configurationImpl) {
-        mainNode.addInstance("ioc",this);
+        preLoad();
         resolveBeans(configurationImpl);
     }
 
@@ -31,75 +37,142 @@ public class IOC {
 
     }
 
-    private void resolveBeans(ConfigurationImpl configuration) {
-        var beans = configuration.getBeans();
-        var beanConfigurationMap = configuration.getClassBeanMap();
-        for (var i = 0; i < beans.size(); i++) {
-            var config = beans.get(i);
-            switch (config.getType()) {
 
-                case INSTANCE -> {
-                    mainNode.addInstance(config.getName(), config.getBeanInstance());
-                    if (config.getBeanInstance() instanceof BeanFactory factory) {
-                        factory.create(configuration);
-                    }
+    private void preLoad() {
+        mainNode.addInstance("ioc", this);
+    }
 
-                }
-                case CLASS -> {
-                    var instance = resolveBeanInstance(config.getBeanClass(), beanConfigurationMap, new Stack<>());
-                    if (instance instanceof BeanFactory factory) {
-                        factory.create(configuration);
-                    }
-                }
 
-            }
+    private void checkCircularReference(Class<?> clazz, Set<Class<?>> classes) {
+        if (classes.contains(clazz))
+            throw CircularReferenceException.newInstance(classes, clazz);
+        classes.add(clazz);
+
+        Constructor c = getClassCostructor(clazz);
+
+        for (var p : c.getParameters())
+            checkCircularReference(p.getType(), classes);
+
+    }
+
+    private void checkNoSuchBean(BeanInfo beanInfo, LinkedList<BeanInfo> unsolvedQueue) {
+        for (var param : beanInfo.getUnsolvedParameters()) {
+            var has = unsolvedQueue.stream().anyMatch(b ->
+                    b.getName().equals(param.getName())
+                            &&
+                            b.getBeanClass().equals(param.getType())
+            );
+            if (!has)
+                throw new NoSuchBeanException("Não ha bean para o parametro " +param.getParameter() + " da classe " + beanInfo.getBeanClass());
+
         }
     }
 
-    private Object resolveBeanInstance(Class<?> currClass, Map<Class<?>, BeanInfo> beanConfigurationMap, Stack<Class<?>> configStack) {
-        Object instance = null;
+    private void checkErros(LinkedList<BeanInfo> unsolvedQueue) {
 
-        try {
-            instance = mainNode.getInstance(currClass);
-        } catch (NoSuchBeanException e) {
+        for (var b : unsolvedQueue) {
+            checkCircularReference(b.getBeanClass(), new HashSet<>());
+            checkNoSuchBean(b,unsolvedQueue);
         }
-        if (Objects.nonNull(instance))
-            return instance;
 
-        if (configStack.contains(currClass))
-            throw CircularReferenceException.newInstance(configStack, currClass);
+    }
+
+    private void resolveBeans(ConfigurationImpl configuration) {
+        var beans = configuration.getBeans();
+        LinkedList<BeanInfo> unsolvedQueue = new LinkedList<>();
+        Boolean hasSolution = false;
+
+        for (; ; ) {
+            if (beans.isEmpty()) {
+
+                if (!hasSolution)
+                    //se nenhum bean foi resolvido na rodada ocorreu algum erro
+                    checkErros(unsolvedQueue);
+
+                hasSolution = false;
+                beans = unsolvedQueue;
+                unsolvedQueue = new LinkedList<>();
+            }
+
+            if (beans.isEmpty())
+                break;
+
+            var config = beans.pop();
+
+            resolveBeanInstance(config);
+
+            if (BeanResolveState.UNFINISHED.equals(config.getState()))
+                unsolvedQueue.add(config);
+            else if (BeanResolveState.SOLVED.equals(config.getState())) {
+                hasSolution = true;
+                mainNode.addInstance(config.getName(), config.getBeanInstance());
+                if (config.getBeanInstance() instanceof BeanFactory factory) {
+                    ConfigurationImpl configFactory = new ConfigurationImpl();
+                    factory.create(configFactory);
+                    beans.addAll(configFactory.getBeans());
+                }
+
+            }
 
 
-        var config = beanConfigurationMap.get(currClass);
-
-        configStack.push(currClass);
-
-
-        if (currClass.getConstructors().length > 1)
-            throw new TooManyConstructorsException("Bean de classe " + currClass + " com mais de 1 construtor");
-        else if (currClass.getConstructors().length == 0) {
-            throw new NoSuchConstructorException("Bean de classe " + currClass + " deve have pelo menos 1 construtor publico");
         }
-        var constructor = currClass.getConstructors()[0];
+    }
+
+
+    private Constructor<?> getClassCostructor(Class<?> clazz) {
+        var constructors = clazz.getConstructors();
+        if (constructors.length > 1)
+            throw new TooManyConstructorsException("Bean de classe " + clazz + " com mais de 1 construtor");
+        else if (constructors.length == 0) {
+            throw new NoSuchConstructorException("Bean de classe " + clazz + " deve have pelo menos 1 construtor publico");
+        }
+        return constructors[0];
+    }
+
+    private void resolveBeanInstance(BeanInfo beanInfo) {
+        var clazz = beanInfo.getBeanClass();
+
+
+        var constructor = getClassCostructor(clazz);
 
         var parameters = constructor.getParameters();
-        List<Object> instances = new LinkedList<>();
 
-        for (var param : parameters) {
-            instances.add(resolveBeanInstance(param.getType(), beanConfigurationMap, configStack));
+        List<ParameterInfo> unsolvedParameters = new LinkedList<>(beanInfo.getUnsolvedParameters());
+        beanInfo.getUnsolvedParameters().clear();
+
+        boolean hasUnsolvedParameters = false;
+        boolean newBean = BeanResolveState.NEW.equals(beanInfo.getState());
+        var length = newBean ? parameters.length : unsolvedParameters.size();
+        if(newBean){
+            beanInfo.setSolvedParameters(new Object[length]);
+        }
+
+        for (var i = 0; i < length; i++) {
+            var paramInfo = newBean ? new ParameterInfo(parameters[i], i) : unsolvedParameters.get(i);
+
+            try {
+                var instance = "".equals(paramInfo.getName().trim()) ? mainNode.getInstance(paramInfo.getType()) : mainNode.getInstance(paramInfo.getType(), paramInfo.getName());
+                beanInfo.getSolvedParameters()[paramInfo.getIndex()] = instance;
+
+            } catch (NoSuchBeanException e) {
+                hasUnsolvedParameters = true;
+                beanInfo.getUnsolvedParameters().add(paramInfo);
+            }
+        }
+
+        if (hasUnsolvedParameters) {
+            beanInfo.setState(BeanResolveState.UNFINISHED);
+            return;
         }
 
         try {
-            instance = constructor.newInstance(instances.toArray());
+
+            beanInfo.setBeanInstance(constructor.newInstance(beanInfo.getSolvedParameters()));
+            beanInfo.setState(BeanResolveState.SOLVED);
         } catch (Exception e) {
             // EM CONDIÇÕES NORMAIS DA JVM, NÃO DEVE OCORRER
             throw new Error(e);
         }
-
-        mainNode.addInstance(config.getName(), instance);
-        configStack.pop();
-        return instance;
-
     }
 
 

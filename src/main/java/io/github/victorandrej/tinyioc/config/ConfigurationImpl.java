@@ -2,16 +2,13 @@ package io.github.victorandrej.tinyioc.config;
 
 import io.github.victorandrej.tinyioc.exception.InvalidClassException;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
+import io.github.victorandrej.tinyioc.util.BeanUtil;
 
 import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public class ConfigurationImpl implements Configuration {
     private LinkedList<BeanInfo> beans = new LinkedList<>();
-    private Map<Class<?>, BeanInfo> classBeanMap = new HashMap<>();
     private Boolean scanNonUsedBeans = false;
     private Class<?> rootClassPackage;
 
@@ -22,53 +19,51 @@ public class ConfigurationImpl implements Configuration {
         if (isMember && (!isStatic || !isPublic))
             throw new InvalidClassException("Classes membros devem ser publicas e estaticas " + clazz);
 
-        Bean b = clazz.getDeclaredAnnotation(Bean.class);
+        var b = getBeanAnnotation(clazz);
 
-        if (Objects.isNull(b))
-            throw new InvalidClassException("Bean deve ser anotado com anotacao @Bean " + clazz);
-        return b;
+        return b.orElseThrow(() -> new InvalidClassException("Bean deve ser anotado com anotacao @Bean " + clazz));
+
     }
 
-    private String resolveBeanName(Bean b, Class<?> clazz) {
-
-        if (!"".equals(b.beanName().trim()))
-            return b.beanName();
-
-        var className = clazz.getSimpleName();
-        return className.substring(0, 1).toLowerCase() + className.substring(1);
+    private Optional<Bean> getBeanAnnotation(Class<?> clazz) {
+        return Optional.ofNullable(clazz.getDeclaredAnnotation(Bean.class));
     }
 
-    public Configuration scanNonUsedBean(Class<?> rootPackageClass){
+
+    public Configuration scanNonUsedBean(Class<?> rootPackageClass) {
         this.scanNonUsedBeans = true;
         this.rootClassPackage = rootPackageClass;
-        return  this;
+        return this;
     }
 
     public Configuration bean(Class<?> bean) {
-        var b = testClass(bean);
-
-        var configuration = new BeanInfo(resolveBeanName(b, bean), bean);
-        classBeanMap.put(bean, configuration);
-
-        return bean(configuration);
+        var b = getBeanAnnotation(bean);
+        var name = b.isPresent()? b.get().beanName() : "";
+        return bean(bean,name);
     }
 
     private Configuration bean(BeanInfo configuration) {
         beans.add(configuration);
         return this;
     }
+
     public Configuration bean(Class<?> bean, String name) {
         testClass(bean);
-        return bean(new BeanInfo(name, bean));
+        return bean(new BeanInfo(BeanUtil.resolveBeanName(name, bean), bean) {{
+            this.setState(BeanResolveState.NEW);
+        }});
     }
-    public Configuration  bean(Object bean, String name) {
-        testClass(bean.getClass());
-        return bean(new BeanInfo(name, bean));
+
+    public Configuration bean(Object bean, String name) {
+
+        return bean(new BeanInfo(BeanUtil.resolveBeanName(name, bean.getClass()), bean) {{
+            setState(BeanResolveState.SOLVED);
+        }});
     }
 
     public Configuration bean(Object bean) {
         Bean b = testClass(bean.getClass());
-        return bean(new BeanInfo(b.beanName(), bean));
+        return bean(bean, b.beanName());
     }
 
     public LinkedList<BeanInfo> getBeans() {
@@ -77,10 +72,6 @@ public class ConfigurationImpl implements Configuration {
 
     public Boolean getScanNonUsedBeans() {
         return scanNonUsedBeans;
-    }
-
-    public Map<Class<?>, BeanInfo> getClassBeanMap() {
-        return classBeanMap;
     }
 
     public Class<?> getRootClassPackage() {
