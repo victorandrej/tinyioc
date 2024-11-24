@@ -24,9 +24,10 @@ public class ParameterInfo {
     }
 
     private Class<?> getCollectionType(Parameter parameter){
-       ParameterizedType type = (ParameterizedType) parameter.getParameterizedType();
+        if(parameter.getParameterizedType() instanceof  ParameterizedType type)
+            return (Class<?>) type.getActualTypeArguments()[0];
 
-      return (Class<?>) type.getActualTypeArguments()[0];
+      return parameter.getType() ;
     }
     private void makeMetadado() {
         this. isCollection = Collections.class.equals(parameter.getType()) || List.class.equals(parameter.getType());
