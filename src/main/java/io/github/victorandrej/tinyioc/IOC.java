@@ -37,6 +37,10 @@ public class IOC {
 
     }
 
+    public <T> List<T> getInstancesCollection(Class<T> clazz){
+        return (List<T>) mainNode.getInstancesCollection(clazz);
+    }
+
 
     private void preLoad() {
         mainNode.addInstance("ioc", this);
@@ -63,7 +67,7 @@ public class IOC {
                             b.getBeanClass().equals(param.getType())
             );
             if (!has)
-                throw new NoSuchBeanException("Não ha bean para o parametro " +param.getParameter() + " da classe " + beanInfo.getBeanClass());
+                throw new NoSuchBeanException("Não ha bean para o parametro " + param.getParameter() + " da classe " + beanInfo.getBeanClass());
 
         }
     }
@@ -72,7 +76,7 @@ public class IOC {
 
         for (var b : unsolvedQueue) {
             checkCircularReference(b.getBeanClass(), new HashSet<>());
-            checkNoSuchBean(b,unsolvedQueue);
+            checkNoSuchBean(b, unsolvedQueue);
         }
 
     }
@@ -143,7 +147,7 @@ public class IOC {
         boolean hasUnsolvedParameters = false;
         boolean newBean = BeanResolveState.NEW.equals(beanInfo.getState());
         var length = newBean ? parameters.length : unsolvedParameters.size();
-        if(newBean){
+        if (newBean) {
             beanInfo.setSolvedParameters(new Object[length]);
         }
 
@@ -151,7 +155,7 @@ public class IOC {
             var paramInfo = newBean ? new ParameterInfo(parameters[i], i) : unsolvedParameters.get(i);
 
             try {
-                var instance = "".equals(paramInfo.getName().trim()) ? mainNode.getInstance(paramInfo.getType()) : mainNode.getInstance(paramInfo.getType(), paramInfo.getName());
+                var instance = paramInfo.isCollection() ? mainNode.getInstancesCollection(paramInfo.getType()) : "".equals(paramInfo.getName().trim()) ? mainNode.getInstance(paramInfo.getType()) : mainNode.getInstance(paramInfo.getType(), paramInfo.getName());
                 beanInfo.getSolvedParameters()[paramInfo.getIndex()] = instance;
 
             } catch (NoSuchBeanException e) {

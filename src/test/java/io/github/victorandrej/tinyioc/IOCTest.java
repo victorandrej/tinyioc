@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -206,6 +207,41 @@ public class IOCTest {
     @Test
     public void deve_criar_o_bean_com_referencia_requerida(){
         assertDoesNotThrow(()-> IOCBuilder.configure().bean(ClasseTeste.class).bean(ClasseComDependencia.class).build());
+    }
+
+    @Test
+    public  void  deve_retornar_colecao_de_beans_de_mesmo_tipo(){
+        assertDoesNotThrow(()->{
+            IOC ioc = IOCBuilder.configure().bean(ClasseTeste.class,"teste")
+                    .bean(ClasseTeste.class,"teste2").build();
+            List<ClasseTeste> testeInstances = ioc.getInstancesCollection(ClasseTeste.class);
+            assertEquals(2,testeInstances.size());
+
+        });
+
+    }
+
+
+    @Test
+    public  void  deve_criar_classe_com_colecao_de_beans_de_mesmo_tipo(){
+        assertDoesNotThrow(()->{
+            IOC ioc = IOCBuilder.configure().bean(ClasseTeste.class,"teste")
+                    .bean(ClasseTeste.class,"teste2")
+                    .bean(ClasseComListaNoConstrutor.class).build();
+            var  t = ioc.getInstance(ClasseComListaNoConstrutor.class);
+            assertEquals(2,t.testes.size());
+
+        });
+
+    }
+
+
+    @Bean
+    public  static class ClasseComListaNoConstrutor{
+        public List<ClasseTeste> testes;
+        public ClasseComListaNoConstrutor(List<ClasseTeste> testes){
+            this.testes = testes;
+        }
     }
 
     @Bean

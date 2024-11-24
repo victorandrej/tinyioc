@@ -162,6 +162,12 @@ public class BeanNode {
 
 
     }
+    public <T> List<T> getInstancesCollection(Class<T> collectionType){
+        Objects.requireNonNull(collectionType);
+        var result = getBeanNode(collectionType);
+        return (List<T>) result.beanInstance.values().stream().map(b -> b.getBeanInstance()).toList();
+
+    }
 
     public <T> T getInstance(Class<T> beanClass, String name) {
         Objects.requireNonNull(beanClass);
