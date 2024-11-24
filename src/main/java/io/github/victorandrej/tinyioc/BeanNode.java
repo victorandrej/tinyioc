@@ -165,7 +165,10 @@ public class BeanNode {
     public <T> List<T> getInstancesCollection(Class<T> collectionType){
         Objects.requireNonNull(collectionType);
         var result = getBeanNode(collectionType);
-        return (List<T>) result.beanInstance.values().stream().map(b -> b.getBeanInstance()).toList();
+        List<T> list = new LinkedList<>();
+        list.addAll((Collection<? extends T>) result.beanInstance.values().stream().map(b -> b.getBeanInstance()).toList());
+        list.addAll((Collection<? extends T>) result.childrenBeanInstance.stream().map(b->b.getBeanInstance()).toList());
+        return Collections.unmodifiableList(list) ;
 
     }
 
