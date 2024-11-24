@@ -23,7 +23,7 @@ public class ParameterInfo {
         this.type = parameter.getType();
         Named named = parameter.getAnnotation(Named.class);
 
-        this.name = BeanUtil.resolveBeanName(Objects.nonNull(named) ? named.value() : "", type);
+        this.name = Objects.nonNull(named) ? named.value() : "";
 
     }
 

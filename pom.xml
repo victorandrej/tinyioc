@@ -6,7 +6,7 @@
 
     <groupId>io.github.victorandrej</groupId>
     <artifactId>tinyioc</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.11</version>
     <url>https://github.com/victorandrej/tinyioc</url>
 
     <description>Pequeno injetor de dependencia</description>
