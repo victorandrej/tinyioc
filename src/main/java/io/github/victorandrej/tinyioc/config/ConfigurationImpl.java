@@ -16,12 +16,16 @@ public class ConfigurationImpl implements Configuration {
         var isMember = clazz.isMemberClass();
         var isStatic = Modifier.isStatic(clazz.getModifiers());
         var isPublic = Modifier.isPublic(clazz.getModifiers());
-        if (isMember && (!isStatic || !isPublic))
+        var isAbstract = Modifier.isAbstract(clazz.getModifiers());
+        if(isAbstract)
+            throw  new InvalidClassException("Classe abstrata " + clazz);
+
+        if (   isMember && (!isStatic || !isPublic))
             throw new InvalidClassException("Classes membros devem ser publicas e estaticas " + clazz);
 
         var b = getBeanAnnotation(clazz);
 
-        return b.orElseThrow(() -> new InvalidClassException("Bean deve ser anotado com anotacao @Bean " + clazz));
+        return b.orElseThrow(() -> new InvalidClassException("Classe deve ser anotado com anotacao @Bean " + clazz));
 
     }
 

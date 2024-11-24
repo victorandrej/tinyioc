@@ -38,4 +38,8 @@ public final  class ClassUtil {
     }
 
 
+    public static <T extends Throwable> void sneakyThrow(Throwable exception) throws T {
+        throw (T) exception;
+    }
+
 }

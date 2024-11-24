@@ -236,6 +236,16 @@ public class IOCTest {
     }
 
 
+    @Test
+    public  void  deve_retornar_erro_se_a_classe_for_abstrata(){
+
+        assertThrows(InvalidClassException.class,()->IOCBuilder.configure().bean(ClasseAbstrata.class).build());
+
+    }
+
+    @Bean
+    public  static  abstract class ClasseAbstrata{}
+
     @Bean
     public  static class ClasseComListaNoConstrutor{
         public List<ClasseTeste> testes;

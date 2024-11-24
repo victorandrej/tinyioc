@@ -11,9 +11,11 @@ import io.github.victorandrej.tinyioc.exception.TooManyConstructorsException;
 
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 import io.github.victorandrej.tinyioc.steriotypes.BeanFactory;
+import io.github.victorandrej.tinyioc.util.ClassUtil;
 
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.util.*;
 
@@ -171,11 +173,13 @@ public class IOC {
 
         try {
 
+
             beanInfo.setBeanInstance(constructor.newInstance(beanInfo.getSolvedParameters()));
             beanInfo.setState(BeanResolveState.SOLVED);
+        }catch (InvocationTargetException ex){
+            ClassUtil.sneakyThrow(ex.getCause());
         } catch (Exception e) {
-            // EM CONDIÇÕES NORMAIS DA JVM, NÃO DEVE OCORRER
-            throw new Error(e);
+            ClassUtil.sneakyThrow(e);
         }
     }
 
