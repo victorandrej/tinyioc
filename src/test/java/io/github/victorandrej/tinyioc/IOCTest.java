@@ -3,6 +3,7 @@ package io.github.victorandrej.tinyioc;
 
 import io.github.victorandrej.tinyioc.config.Configuration;
 import io.github.victorandrej.tinyioc.exception.*;
+
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 import io.github.victorandrej.tinyioc.steriotypes.BeanFactory;
 import io.github.victorandrej.tinyioc.util.ClassUtilTeste;

@@ -50,6 +50,13 @@ public final class IOCBuilder {
             configurationImpl.bean(instance);
             return  this;
         }
+
+        @Override
+        public IOCConfigurationBuilder useScan() {
+            configurationImpl.useScan();
+            return this;
+        }
+
         public IOCConfigurationBuilder bean(Object instance,String name){
             configurationImpl.bean(instance,name);
             return  this;

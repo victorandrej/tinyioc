@@ -19,7 +19,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.util.*;
 
-@Bean
+
 public class IOC {
     BeanNode mainNode = BeanNode.newInstance();
 
@@ -85,6 +85,7 @@ public class IOC {
 
     private void resolveBeans(ConfigurationImpl configuration) {
         var beans = configuration.getBeans();
+
         LinkedList<BeanInfo> unsolvedQueue = new LinkedList<>();
         Boolean hasSolution = false;
 

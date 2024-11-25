@@ -1,6 +1,9 @@
 package io.github.victorandrej.tinyioc.util;
 
+import io.github.victorandrej.tinyioc.steriotypes.Bean;
+
 import java.util.Objects;
+
 
 public class BeanUtil {
     private  BeanUtil(){}

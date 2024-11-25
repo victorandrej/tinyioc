@@ -1,5 +1,6 @@
 package io.github.victorandrej.tinyioc.config;
 
+import io.github.victorandrej.tinyioc.config.scan.ClassScanner;
 import io.github.victorandrej.tinyioc.exception.InvalidClassException;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 import io.github.victorandrej.tinyioc.util.BeanUtil;
@@ -17,10 +18,10 @@ public class ConfigurationImpl implements Configuration {
         var isStatic = Modifier.isStatic(clazz.getModifiers());
         var isPublic = Modifier.isPublic(clazz.getModifiers());
         var isAbstract = Modifier.isAbstract(clazz.getModifiers());
-        if(isAbstract)
-            throw  new InvalidClassException("Classe abstrata " + clazz);
+        if (isAbstract)
+            throw new InvalidClassException("Classe abstrata " + clazz);
 
-        if (   isMember && (!isStatic || !isPublic))
+        if (isMember && (!isStatic || !isPublic))
             throw new InvalidClassException("Classes membros devem ser publicas e estaticas " + clazz);
 
         var b = getBeanAnnotation(clazz);
@@ -42,8 +43,8 @@ public class ConfigurationImpl implements Configuration {
 
     public Configuration bean(Class<?> bean) {
         var b = getBeanAnnotation(bean);
-        var name = b.isPresent()? b.get().beanName() : "";
-        return bean(bean,name);
+        var name = b.isPresent() ? b.get().beanName() : "";
+        return bean(bean, name);
     }
 
     private Configuration bean(BeanInfo configuration) {
@@ -69,6 +70,13 @@ public class ConfigurationImpl implements Configuration {
         Bean b = testClass(bean.getClass());
         return bean(bean, b.beanName());
     }
+
+    @Override
+    public Configuration useScan() {
+        ClassScanner.getClasses().forEach(this::bean);
+        return this;
+    }
+
 
     public LinkedList<BeanInfo> getBeans() {
         return beans;

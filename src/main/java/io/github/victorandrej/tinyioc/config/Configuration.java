@@ -48,5 +48,10 @@ public interface Configuration {
      */
     public Configuration bean(Object bean);
 
+    /**
+     *  Utilizar a entidades pre escaneadas
+     * @return
+     */
+    public  Configuration useScan();
 
 }

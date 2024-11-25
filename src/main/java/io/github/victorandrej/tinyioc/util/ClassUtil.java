@@ -7,15 +7,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 
-public final  class ClassUtil {
-    private ClassUtil(){}
+public final class ClassUtil {
+    private ClassUtil() {
+    }
 
     /**
      * retorna todas as classes contida no pacote
+     *
      * @param rootClassPackage classe do pacote que deve ser escaneado
      * @return
      */
-     public  static  Set<Class> findAllClasses(Class<?> rootClassPackage) {
+    public static Set<Class> findAllClasses(Class<?> rootClassPackage) {
         InputStream stream = rootClassPackage.getClassLoader().getSystemClassLoader()
                 .getResourceAsStream(rootClassPackage.getPackageName().replaceAll("[.]", "/"));
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
@@ -28,7 +30,7 @@ public final  class ClassUtil {
     private static Class getClass(String className, String packageName) {
         className = className.substring(0, className.lastIndexOf('.'));
         String fullClassName = packageName.isEmpty() ? className : (packageName + "."
-                +className );
+                + className);
         try {
             return Class.forName(fullClassName);
         } catch (ClassNotFoundException e) {
@@ -40,6 +42,20 @@ public final  class ClassUtil {
 
     public static <T extends Throwable> void sneakyThrow(Throwable exception) throws T {
         throw (T) exception;
+    }
+
+    public static <T extends Throwable> void sneakyThrow(RunnableThrowable runnable) throws T {
+        try {
+            runnable.run();
+        } catch (Throwable t) {
+            throw (T) t;
+        }
+    }
+
+
+
+    public interface RunnableThrowable {
+        public void run() throws Throwable;
     }
 
 }

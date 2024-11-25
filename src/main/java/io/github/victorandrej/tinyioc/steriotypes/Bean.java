@@ -11,5 +11,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface Bean {
+       public static final   String DIRECTORY = "io.github.victorandrej.tinyioc.steriotypes.Bean";
        String beanName() default  "" ;
 }
