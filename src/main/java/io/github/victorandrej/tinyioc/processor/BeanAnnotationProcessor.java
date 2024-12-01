@@ -83,7 +83,7 @@ public class BeanAnnotationProcessor implements Processor {
             Bean b = clazz.getAnnotation(Bean.class);
             var index = classes.indexOf(b.classOrder());
 
-            if(index == -1 || b.classOrder().equals(clazz) )
+            if(index == -1 || b.classOrder().equals(clazz) || clazz.isAnnotation())
                 continue;
 
             classes.remove(i);
