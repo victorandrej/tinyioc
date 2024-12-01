@@ -25,10 +25,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-import  io.github.victorandrej.tinyioc.processor.Processor;
+import java.util.*;
+
+import io.github.victorandrej.tinyioc.processor.Processor;
 
 
 @SupportedAnnotationTypes(Const.BEAN_ANNOTATION)
@@ -44,27 +43,24 @@ public class BeanAnnotationProcessor implements Processor {
 
     @Override
     public void process(File generetedSourceDir, List<Class<?>> classes, Log log) throws Exception {
-        createClasScan(generetedSourceDir,classes,log);
+        createClasScan(generetedSourceDir, classes, log);
     }
-
 
 
     private void createClasScan(File generetedSourceDir, List<Class<?>> classes, Log log) {
         if (classes.isEmpty())
             return;
+
+        classes = filterAndOrganize(classes);
+
         var method = MethodSpec.methodBuilder(Const.SCAN_METHOD_NAME)
                 .addModifiers(javax.lang.model.element.Modifier.PUBLIC, javax.lang.model.element.Modifier.STATIC)
                 .returns(void.class)
                 .addException(Exception.class);
 
         for (var clazz : classes) {
-
-            if (clazz.isAnnotationPresent(Bean.class)) {
-
-                log.info("Gerando MetaDado para a " + clazz);
-                method.addStatement("$T.addClass("+clazz.getCanonicalName()+".class)", ClassScanner.class);
-
-            }
+            log.info("Gerando MetaDado para a " + clazz);
+            method.addStatement("$T.addClass(" + clazz.getCanonicalName() + ".class)", ClassScanner.class);
         }
         TypeSpec generatedClass = TypeSpec.classBuilder(Const.CLASS_SCAN_CLASS)
                 .addModifiers(javax.lang.model.element.Modifier.PUBLIC)
@@ -74,6 +70,44 @@ public class BeanAnnotationProcessor implements Processor {
         JavaFile javaFile = JavaFile.builder(Const.SCAN_PACKAGE, generatedClass).build();
         ClassUtil.sneakyThrow(() -> javaFile.writeTo(generetedSourceDir));
 
+    }
+
+    private List<Class<?>> filterAndOrganize(List<Class<?>> classes) {
+
+
+
+        classes = new LinkedList<>(classes.stream().filter(c->c.isAnnotationPresent(Bean.class)).toList());
+
+        for(var i = 0; i< classes.size();i++){
+            var clazz =classes.get(i);
+            Bean b = clazz.getAnnotation(Bean.class);
+            var index = classes.indexOf(b.classOrder());
+
+            if(index == -1 || b.classOrder().equals(clazz) )
+                continue;
+
+            classes.remove(i);
+
+
+            switch (b.order()){
+                case AFTER -> {
+                    if(i >= index+1)
+                        continue;
+                    classes.add(index+1,clazz);
+
+                }
+                case BEFORE -> {
+                    if(i <= index)
+                        continue;
+                    classes.add(index,clazz);
+                }
+                default -> {}
+            }
+
+            i =-1;
+        }
+
+        return  classes;
     }
 
 

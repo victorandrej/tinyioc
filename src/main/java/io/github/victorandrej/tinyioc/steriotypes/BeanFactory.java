@@ -10,5 +10,5 @@ public interface BeanFactory {
      *  cria os beans
      * @param configuration
      */
-    void create(Configuration configuration);
+    void create(Configuration configuration) throws Exception;
 }

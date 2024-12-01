@@ -29,6 +29,10 @@ public class IOC {
     }
 
 
+    public void register(String name, Object bean){
+        mainNode.addInstance(name,bean);
+    }
+
     public <T> T getInstance(Class<T> beanClass) {
         return mainNode.getInstance(beanClass);
 
@@ -115,7 +119,7 @@ public class IOC {
                 mainNode.addInstance(config.getName(), config.getBeanInstance());
                 if (config.getBeanInstance() instanceof BeanFactory factory) {
                     ConfigurationImpl configFactory = new ConfigurationImpl();
-                    factory.create(configFactory);
+                   ClassUtil.sneakyThrow(()-> factory.create(configFactory));
                     beans.addAll(configFactory.getBeans());
                 }
 

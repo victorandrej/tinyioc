@@ -6,7 +6,7 @@
 
     <groupId>io.github.victorandrej</groupId>
     <artifactId>tinyioc</artifactId>
-    <version>1.0.14</version>
+    <version>1.0.17</version>
     <url>https://github.com/victorandrej/tinyioc</url>
 
     <description>Pequeno injetor de dependencia</description>
@@ -35,6 +35,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <tinyioc-preprocessor.version>1.0.3</tinyioc-preprocessor.version>
     </properties>
     <dependencies>
         <dependency>
@@ -48,7 +49,7 @@
         <dependency>
             <groupId>io.github.victorandrej</groupId>
             <artifactId>tinyioc-preprocessor</artifactId>
-            <version>1.0.0</version>
+            <version>${tinyioc-preprocessor.version}</version>
         </dependency>
         <dependency>
             <groupId>com.squareup</groupId>
@@ -60,28 +61,6 @@
 
     <build>
         <plugins>
-
-            <plugin>
-                <groupId>io.github.victorandrej</groupId>
-                <artifactId>tinyioc-preprocessor</artifactId>
-                <version>1.0.0</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.squareup</groupId>
-                        <artifactId>javapoet</artifactId>
-                        <version>1.13.0</version>
-                        <scope>compile</scope>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>processor-runner</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>

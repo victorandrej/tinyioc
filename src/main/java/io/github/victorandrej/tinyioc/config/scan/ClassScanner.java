@@ -1,6 +1,7 @@
 package io.github.victorandrej.tinyioc.config.scan;
 
 import io.github.victorandrej.tinyioc.config.Const;
+import io.github.victorandrej.tinyioc.util.ClassUtil;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -13,16 +14,16 @@ public final class ClassScanner {
     }
 
     static {
-        try {
-            Class<?> clazz = Class.forName(Const.SCAN_PACKAGE +"."+ Const.CLASS_SCAN_CLASS);
+        classes = new LinkedList<>();
+
+        ClassUtil.sneakyThrow(() -> {
+            Class<?> clazz = Class.forName(Const.SCAN_PACKAGE + "." + Const.CLASS_SCAN_CLASS);
             Method m = clazz.getMethod(Const.SCAN_METHOD_NAME);
             m.invoke(null);
-        } catch (Exception e) {
-
-        }
+        });
     }
 
-    private static List<Class<?>> classes = new LinkedList<>();
+    private final static List<Class<?>> classes;
 
     public static List<Class<?>> getClasses() {
         return Collections.unmodifiableList(classes);
