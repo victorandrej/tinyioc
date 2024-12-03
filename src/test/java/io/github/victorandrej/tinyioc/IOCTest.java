@@ -1,6 +1,7 @@
 package io.github.victorandrej.tinyioc;
 
 
+import io.github.victorandrej.tinyioc.config.BeanMetadado;
 import io.github.victorandrej.tinyioc.config.Configuration;
 import io.github.victorandrej.tinyioc.exception.*;
 
@@ -25,8 +26,7 @@ public class IOCTest {
     public static void beforeAll() {
         instance =
                 IOCBuilder.configure().bean(ClasseTeste.class)
-                        .bean(ClasseTeste2.class)
-                        .bean(ClasseComInterface.class).build();
+                        .bean(ClasseTeste2.class).build();
 
 
     }
@@ -59,7 +59,8 @@ public class IOCTest {
     @Test
     public void deve_retornar_implementacao_de_interface() {
         assertDoesNotThrow(() -> {
-            var o = instance.getInstance(BeanInterface.class);
+            IOC ioc = IOCBuilder.configure() .bean(ClasseComInterface.class).build();
+            var o = ioc.getInstance(BeanInterface.class);
             assertEquals(ClasseComInterface.class, o.getClass());
         });
 
@@ -74,7 +75,7 @@ public class IOCTest {
     @Test
     public void deve_retornar_erro_caso_existam_mais_de_uma_instancia_para_o_bean() {
         IOC ioc = IOCBuilder.configure().bean(ClasseComInterface.class).bean(ClasseDuplicadaComInterface.class).build();
-        assertThrows(RuntimeException.class, () -> ioc.getInstance(BeanInterface.class));
+        assertThrows(UnresolvableBeanException.class, () -> ioc.getInstance(BeanInterface.class));
     }
 
     @Test
@@ -211,12 +212,13 @@ public class IOCTest {
     }
 
     @Test
-    public  void  deve_retornar_colecao_de_beans_de_mesmo_tipo(){
+    public  void  deve_retornar_colecao_de_metadado_de_beans_de_mesmo_tipo(){
         assertDoesNotThrow(()->{
             IOC ioc = IOCBuilder.configure().bean(ClasseTeste.class,"teste")
-                    .bean(ClasseTeste.class,"teste2").build();
-            List<ClasseTeste> testeInstances = ioc.getInstancesCollection(ClasseTeste.class);
-            assertEquals(2,testeInstances.size());
+                    .bean(ClasseTeste.class,"teste2")
+                    .bean(ClasseExtendeTeste.class,"teste3").build();
+            List<BeanMetadado> testeInstances = ioc.getInstancesCollection(ClasseTeste.class);
+            assertEquals(3,testeInstances.size());
 
         });
 
@@ -355,6 +357,11 @@ public class IOCTest {
     class NonStaticClass {
 
     }
+
+
+    @Bean()
+    public static class  ClasseExtendeTeste extends ClasseTeste{}
+
 
     @Bean()
     public static class ClasseTeste {

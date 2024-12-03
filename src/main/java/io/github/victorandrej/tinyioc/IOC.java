@@ -1,9 +1,6 @@
 package io.github.victorandrej.tinyioc;
 
-import io.github.victorandrej.tinyioc.config.BeanInfo;
-import io.github.victorandrej.tinyioc.config.BeanResolveState;
-import io.github.victorandrej.tinyioc.config.ConfigurationImpl;
-import io.github.victorandrej.tinyioc.config.ParameterInfo;
+import io.github.victorandrej.tinyioc.config.*;
 import io.github.victorandrej.tinyioc.exception.CircularReferenceException;
 import io.github.victorandrej.tinyioc.exception.NoSuchBeanException;
 import io.github.victorandrej.tinyioc.exception.NoSuchConstructorException;
@@ -16,7 +13,6 @@ import io.github.victorandrej.tinyioc.util.ClassUtil;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Parameter;
 import java.util.*;
 
 
@@ -24,13 +20,13 @@ public class IOC {
     BeanNode mainNode = BeanNode.newInstance();
 
     IOC(ConfigurationImpl configurationImpl) {
-        preLoad();
+        preLoad(configurationImpl);
         resolveBeans(configurationImpl);
     }
 
 
-    public void register(String name, Object bean){
-        mainNode.addInstance(name,bean);
+    public void register(String name, Object bean) {
+        mainNode.addInstance(name, bean);
     }
 
     public <T> T getInstance(Class<T> beanClass) {
@@ -43,17 +39,20 @@ public class IOC {
 
     }
 
-    public <T> List<T> getInstancesCollection(Class<T> clazz){
-        return (List<T>) mainNode.getInstancesCollection(clazz);
+    public List<BeanMetadado> getInstancesCollection(Class<?> clazz) {
+        return mainNode.getInstancesCollection(clazz);
     }
 
 
-    private void preLoad() {
+    private void preLoad(ConfigurationImpl configurationImpl) {
         mainNode.addInstance("ioc", this);
+        mainNode.addInstance("configurationImpl", configurationImpl);
     }
 
 
     private void checkCircularReference(Class<?> clazz, Set<Class<?>> classes) {
+        if(clazz.isInterface() || !clazz.isAnnotationPresent(Bean.class))
+            return;
         if (classes.contains(clazz))
             throw CircularReferenceException.newInstance(classes, clazz);
         classes.add(clazz);
@@ -61,16 +60,17 @@ public class IOC {
         Constructor c = getClassCostructor(clazz);
 
         for (var p : c.getParameters())
-            checkCircularReference(p.getType(), classes);
+            checkCircularReference(p.getType(), new LinkedHashSet<>(classes));
 
     }
 
     private void checkNoSuchBean(BeanInfo beanInfo, LinkedList<BeanInfo> unsolvedQueue) {
         for (var param : beanInfo.getUnsolvedParameters()) {
             var has = unsolvedQueue.stream().anyMatch(b ->
-                    b.getName().equals(param.getName())
+                    (  "".equals(param.getName().trim()) ||
+                    b.getName().equals(param.getName()))
                             &&
-                            b.getBeanClass().equals(param.getType())
+                            b.getBeanClass().isAssignableFrom(param.getType())
             );
             if (!has)
                 throw new NoSuchBeanException("Não ha bean para o parametro " + param.getParameter() + " da classe " + beanInfo.getBeanClass());
@@ -92,35 +92,63 @@ public class IOC {
 
         LinkedList<BeanInfo> unsolvedQueue = new LinkedList<>();
         Boolean hasSolution = false;
-
+        Boolean firstCicle = true;
+        Boolean beforeFirst = true;
+        Set<Class<?>> classesPermitidas = new HashSet();
+        Set<Class<?>> factories = new HashSet<>();
         for (; ; ) {
             if (beans.isEmpty()) {
 
-                if (!hasSolution)
+                if (!hasSolution && !firstCicle)
                     //se nenhum bean foi resolvido na rodada ocorreu algum erro
                     checkErros(unsolvedQueue);
 
+                if (unsolvedQueue.isEmpty())
+                    break;
+
+                firstCicle = false;
                 hasSolution = false;
                 beans = unsolvedQueue;
                 unsolvedQueue = new LinkedList<>();
             }
 
-            if (beans.isEmpty())
-                break;
 
             var config = beans.pop();
+            Boolean isFactory = BeanFactory.class.isAssignableFrom(config.getBeanClass());
+            beforeFirst =  beforeFirst ?  config.getBeanClass().equals(PrimaryBean.class) ? false : true : false;
 
-            resolveBeanInstance(config);
-
-            if (BeanResolveState.UNFINISHED.equals(config.getState()))
+            if (LastBean.class.equals(config.getBeanClass()) && !unsolvedQueue.isEmpty()) {
                 unsolvedQueue.add(config);
-            else if (BeanResolveState.SOLVED.equals(config.getState())) {
+                unsolvedQueue.addAll(beans);
+                beans.clear();
+                continue;
+            }
+
+            if (!beforeFirst && !isFactory && ( firstCicle || !factories.isEmpty()  && !classesPermitidas.contains(config.getBeanClass()))) {
+                unsolvedQueue.add(config);
+                continue;
+            }
+
+            if(!BeanResolveState.SOLVED.equals(config.getState()) )
+                resolveBeanInstance(config);
+
+            if (BeanResolveState.UNFINISHED.equals(config.getState())) {
+
+                if (isFactory) {
+                    factories.add(config.getBeanClass());
+                }
+                classesPermitidas.addAll(config.getUnsolvedParameters().stream().map(p -> p.getType()).toList());
+                unsolvedQueue.add(config);
+
+            } else if (BeanResolveState.SOLVED.equals(config.getState())) {
+                factories.remove(config.getBeanClass());
+                classesPermitidas.remove(config.getBeanClass());
                 hasSolution = true;
                 mainNode.addInstance(config.getName(), config.getBeanInstance());
                 if (config.getBeanInstance() instanceof BeanFactory factory) {
                     ConfigurationImpl configFactory = new ConfigurationImpl();
-                   ClassUtil.sneakyThrow(()-> factory.create(configFactory));
-                    beans.addAll(configFactory.getBeans());
+                    ClassUtil.sneakyThrow(() -> factory.create(configFactory));
+                    beans.addAll(0, configFactory.getBeans());
                 }
 
             }
@@ -162,7 +190,7 @@ public class IOC {
             var paramInfo = newBean ? new ParameterInfo(parameters[i], i) : unsolvedParameters.get(i);
 
             try {
-                var instance = paramInfo.isCollection() ? mainNode.getInstancesCollection(paramInfo.getType()) : "".equals(paramInfo.getName().trim()) ? mainNode.getInstance(paramInfo.getType()) : mainNode.getInstance(paramInfo.getType(), paramInfo.getName());
+                var instance = paramInfo.isCollection() ? getCollection(paramInfo.getType()) : "".equals(paramInfo.getName().trim()) ? mainNode.getInstance(paramInfo.getType()) : mainNode.getInstance(paramInfo.getType(), paramInfo.getName());
                 beanInfo.getSolvedParameters()[paramInfo.getIndex()] = instance;
 
             } catch (NoSuchBeanException e) {
@@ -181,11 +209,15 @@ public class IOC {
 
             beanInfo.setBeanInstance(constructor.newInstance(beanInfo.getSolvedParameters()));
             beanInfo.setState(BeanResolveState.SOLVED);
-        }catch (InvocationTargetException ex){
+        } catch (InvocationTargetException ex) {
             ClassUtil.sneakyThrow(ex.getCause());
         } catch (Exception e) {
             ClassUtil.sneakyThrow(e);
         }
+    }
+
+    private Object getCollection(Class<?> type) {
+        return mainNode.getInstancesCollection(type).stream().map(b -> b.getBeanInstance()).toList();
     }
 
 

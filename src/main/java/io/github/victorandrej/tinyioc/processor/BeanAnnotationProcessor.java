@@ -6,6 +6,9 @@ import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import io.github.victorandrej.tinyioc.config.Const;
+import io.github.victorandrej.tinyioc.config.LastBean;
+import io.github.victorandrej.tinyioc.config.NormalBean;
+import io.github.victorandrej.tinyioc.config.PrimaryBean;
 import io.github.victorandrej.tinyioc.config.scan.ClassScanner;
 import io.github.victorandrej.tinyioc.util.ClassUtil;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
@@ -24,6 +27,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.lang.reflect.Modifier;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -58,8 +62,14 @@ public class BeanAnnotationProcessor implements Processor {
                 .returns(void.class)
                 .addException(Exception.class);
 
+        log.info("Escanenado beans");
         for (var clazz : classes) {
-            log.info("Gerando MetaDado para a " + clazz);
+            if(!clazz.isAnnotationPresent(Bean.class) || clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())){
+                log.warn(clazz +" ignorada");
+                continue;
+            }
+
+            log.info("Bean encontrado: " + clazz);
             method.addStatement("$T.addClass(" + clazz.getCanonicalName() + ".class)", ClassScanner.class);
         }
         TypeSpec generatedClass = TypeSpec.classBuilder(Const.CLASS_SCAN_CLASS)
@@ -77,6 +87,9 @@ public class BeanAnnotationProcessor implements Processor {
 
 
         classes = new LinkedList<>(classes.stream().filter(c->c.isAnnotationPresent(Bean.class)).toList());
+        classes.add(0,PrimaryBean.class);
+        classes.add(1,NormalBean.class);
+        classes.add(classes.size(),LastBean.class);
 
         for(var i = 0; i< classes.size();i++){
             var clazz =classes.get(i);
@@ -91,14 +104,20 @@ public class BeanAnnotationProcessor implements Processor {
 
             switch (b.order()){
                 case AFTER -> {
-                    if(i >= index+1)
+                    if(i >= index+1){
+                        classes.add(i,clazz);
                         continue;
+                    }
+
                     classes.add(index+1,clazz);
 
                 }
                 case BEFORE -> {
-                    if(i <= index)
+                    if(i <= index){
+                        classes.add(i,clazz);
                         continue;
+                    }
+
                     classes.add(index,clazz);
                 }
                 default -> {}

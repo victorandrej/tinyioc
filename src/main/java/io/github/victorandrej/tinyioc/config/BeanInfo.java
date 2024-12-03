@@ -58,6 +58,9 @@ public class BeanInfo {
         this.beanInstance = beanInstance;
     }
 
+    public  void setBeanClass(Class<?> beanClass){
+        this.beanClass = beanClass;
+    }
     public Object[] getSolvedParameters() {
         return this.solvedParameters;
     }
