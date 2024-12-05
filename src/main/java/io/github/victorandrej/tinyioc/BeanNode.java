@@ -157,7 +157,19 @@ public class BeanNode {
 
         return c;
     }
+    public   Collection<BeanMetadado> getInstancesCollectionMetadado(Class<?> collectionType) {
+        Objects.requireNonNull(collectionType);
+        var result = this.nodes.get(collectionType);
+        if (Objects.isNull(result))
+            result = this.childrenNodes.get(collectionType);
 
+        if (Objects.isNull(result))
+            throw new NoSuchBeanException("nao existe bean para classe " + collectionType);
+
+        Collection<BeanMetadado> c = new ProxyCollection(result.beanInstances.values(),result.childrenBeanInstances);
+
+        return c;
+    }
 
     public <T> T getInstance(Class<T> beanClass) {
         if (this.nodeClass.equals(beanClass) && Objects.nonNull(this.beanInstances)) {

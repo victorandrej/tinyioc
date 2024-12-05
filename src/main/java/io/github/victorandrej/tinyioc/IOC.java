@@ -39,6 +39,9 @@ public class IOC {
     public <T> Collection<T> getInstancesCollection(Class<T> clazz) {
         return mainNode.getInstancesCollection(clazz);
     }
+    public Collection<BeanMetadado> getInstancesCollectionMetadado(Class<?> clazz){
+        return  mainNode.getInstancesCollectionMetadado(clazz);
+    }
 
 
     private void preLoad(ConfigurationImpl configurationImpl) {
@@ -151,7 +154,7 @@ public class IOC {
                 if (isFactory) {
                     factories.add(config.getBeanClass());
                 }
-                classesPermitidas.addAll(config.getUnsolvedParameters().stream().map(p -> p.getType()).toList());
+                classesPermitidas.addAll(config.getUnsolvedParameters().stream().map(p -> p.isCollection() ? p.getCollectionType() :p.getType()).toList());
                 unsolvedQueue.add(config);
 
             } else if (BeanResolveState.SOLVED.equals(config.getState())) {
