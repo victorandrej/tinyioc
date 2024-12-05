@@ -1,6 +1,7 @@
 package io.github.victorandrej.tinyioc;
 
 
+import io.github.victorandrej.tinyioc.annotation.Optional;
 import io.github.victorandrej.tinyioc.config.BeanMetadado;
 import io.github.victorandrej.tinyioc.config.Configuration;
 import io.github.victorandrej.tinyioc.exception.*;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,6 +55,17 @@ public class IOCTest {
         assertThrows(InvalidClassException.class, () -> {
             IOCBuilder.configure().bean(NonPublicClass.class).build();
         }, "não aceitou classe nao publica");
+
+    }
+
+    @Test
+    public void deve_retornar_implementacao_de_interface_pelo_nome_e_tipo() {
+        assertDoesNotThrow(() -> {
+            IOC ioc = IOCBuilder.configure() .bean(ClasseComInterface.class).build();
+            var o = ioc.getInstance(BeanInterface.class,"classeComInterface");
+            assertEquals(ClasseComInterface.class, o.getClass());
+        });
+
 
     }
 
@@ -130,12 +143,14 @@ public class IOCTest {
     public void deve_retornar_uma_execao_de_referencia_circular() {
 
 
-        assertThrows(CircularReferenceException.class, () -> {
+        CheckErroException checkErroException =    assertThrows(CheckErroException.class, () -> {
             IOCBuilder.configure().bean(CircularReference.class)
                     .bean(CircularReference2.class)
                     .bean(CircularReference3.class).build();
 
         });
+
+        assertTrue(checkErroException.getExceptions().stream().anyMatch(ex-> ex.getClass().equals(CircularReferenceException.class)));
 
 
     }
@@ -199,10 +214,11 @@ public class IOCTest {
 
     @Test
     public  void deve_retornar_erro_se_nao_encontrar_bean_para_injecao(){
-        assertThrows(NoSuchBeanException.class,()->{
+        CheckErroException ex =    assertThrows(CheckErroException.class,()->{
             IOCBuilder.configure().bean(ClasseRequerBeanInexistente.class).build();
         });
 
+        assertTrue(ex.getExceptions().stream().anyMatch(e->e.getClass().equals(NoSuchBeanException.class)));
 
     }
 
@@ -217,7 +233,7 @@ public class IOCTest {
             IOC ioc = IOCBuilder.configure().bean(ClasseTeste.class,"teste")
                     .bean(ClasseTeste.class,"teste2")
                     .bean(ClasseExtendeTeste.class,"teste3").build();
-            List<BeanMetadado> testeInstances = ioc.getInstancesCollection(ClasseTeste.class);
+            Collection<ClasseTeste> testeInstances = ioc.getInstancesCollection(ClasseTeste.class);
             assertEquals(3,testeInstances.size());
 
         });
@@ -246,13 +262,30 @@ public class IOCTest {
 
     }
 
+    @Test
+    public void deve_criar_classe_com_parametro_Opcional(){
+        assertDoesNotThrow(()->{
+            var ioc = IOCBuilder.configure().bean(ClasseComParametroOpcional.class).build();
+            var instance = ioc.getInstance(ClasseComParametroOpcional.class);
+            assertNotNull(instance);
+            assertNull(instance.clazz);
+        });
+
+    }
+
+    @Bean
+    public  static class ClasseComParametroOpcional{
+        public ClasseTeste clazz;
+        public  ClasseComParametroOpcional (@Optional ClasseTeste e){this.clazz = e;}
+    }
+
     @Bean
     public  static  abstract class ClasseAbstrata{}
 
     @Bean
     public  static class ClasseComListaNoConstrutor{
-        public List<ClasseTeste> testes;
-        public ClasseComListaNoConstrutor(List<ClasseTeste> testes){
+        public Collection<ClasseTeste> testes;
+        public ClasseComListaNoConstrutor(Collection<ClasseTeste> testes){
             this.testes = testes;
         }
     }

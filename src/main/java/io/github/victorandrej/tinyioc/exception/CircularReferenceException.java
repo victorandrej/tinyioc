@@ -22,7 +22,7 @@ public class CircularReferenceException extends RuntimeException {
     /**
      * retira as classes que nao fazem parte da referencia circular
      *
-     * @param classQueue
+     * @param classSet
      * @param clazz
      * @return
      */
@@ -33,7 +33,7 @@ public class CircularReferenceException extends RuntimeException {
 
         for (var currClazz : classSet) {
 
-            finded = finded ? finded : Stream.of(currClazz.getConstructors()).anyMatch(c-> Stream.of(c.getParameters()).anyMatch(p->p.getType().equals(clazz)))   ;
+            finded = finded ? finded : currClazz.equals(clazz) || Stream.of(currClazz.getConstructors()).anyMatch(c-> Stream.of(c.getParameters()).anyMatch(p->p.getType().equals(clazz)))   ;
 
 
             if (finded)
