@@ -91,21 +91,26 @@ public class ProxyCollection<T> implements Collection<T> {
         private Iterator<T> currentIterator;
 
         public ProxyIterator(Collection<Collection<T>> collections) {
-            iterCollection = iterCollection;
+            iterCollection = collections.iterator();
         }
 
         @Override
         public boolean hasNext() {
-            return (Objects.nonNull(currentIterator) && currentIterator.hasNext())
-                    || iterCollection.hasNext();
 
+            if (Objects.nonNull(currentIterator) && currentIterator.hasNext())
+                return true;
+
+            while (iterCollection.hasNext()) {
+                currentIterator = iterCollection.next().iterator();
+                if (currentIterator.hasNext())
+                    return true;
+            }
+
+            return false;
         }
 
         @Override
         public T next() {
-            if (Objects.isNull(currentIterator) || !currentIterator.hasNext())
-                currentIterator = iterCollection.next().iterator();
-
             return currentIterator.next();
         }
     }

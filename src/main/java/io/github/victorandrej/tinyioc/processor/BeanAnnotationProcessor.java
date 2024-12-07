@@ -45,13 +45,17 @@ public class BeanAnnotationProcessor implements Processor {
         return Paths.get(System.getProperty(USER_DIR_PROPERTY), IGNORE_PROCESSOR).toFile().exists();
     }
 
+
+
     @Override
-    public void process(File generetedSourceDir, List<Class<?>> classes, Log log) throws Exception {
-        createClasScan(generetedSourceDir, classes, log);
+    public void process(Compiler compiler, Log log) throws Exception {
+        createClasScan( compiler, log);
     }
 
 
-    private void createClasScan(File generetedSourceDir, List<Class<?>> classes, Log log) {
+    private void createClasScan(Compiler compiler , Log log) {
+
+        List<Class<?>> classes = compiler.getSourceClasses();
         if (classes.isEmpty())
             return;
 
@@ -77,9 +81,7 @@ public class BeanAnnotationProcessor implements Processor {
                 .addMethod(method.build())
                 .build();
 
-        JavaFile javaFile = JavaFile.builder(Const.SCAN_PACKAGE, generatedClass).build();
-        ClassUtil.sneakyThrow(() -> javaFile.writeTo(generetedSourceDir));
-
+        compiler.compile(Const.SCAN_PACKAGE,generatedClass);
     }
 
     private List<Class<?>> filterAndOrganize(List<Class<?>> classes) {
@@ -128,6 +130,7 @@ public class BeanAnnotationProcessor implements Processor {
 
         return  classes;
     }
+
 
 
 }
