@@ -31,13 +31,11 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <dependencies>
-        <dependency>
-            <groupId>io.github.victorandrej</groupId>
-            <artifactId>tinyioc</artifactId>
-            <version>1.0.1</version>
-        </dependency>
-    </dependencies>
+    <parent>
+        <groupId>io.github.victorandrej</groupId>
+        <artifactId>tinyioc-parent</artifactId>
+        <version>1.0.5</version>
+    </parent>
     <build>
     </build>
 </project>
