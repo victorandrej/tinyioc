@@ -3,6 +3,9 @@ package io.github.victorandrej.tinyioc.order;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+/**
+ * Priodidade de um bean
+ */
 public abstract class Priority {
 
     public static Class<? extends Priority> getNext(Class<? extends Priority> tClass) {

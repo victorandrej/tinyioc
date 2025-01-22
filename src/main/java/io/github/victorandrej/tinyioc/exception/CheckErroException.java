@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * agrupador de excoes
+ */
 public class CheckErroException extends RuntimeException {
 
     public static CheckErroException create(List<Exception> exceptions) {

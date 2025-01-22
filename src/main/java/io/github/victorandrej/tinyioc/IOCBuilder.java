@@ -9,6 +9,9 @@ import io.github.victorandrej.tinyioc.util.ClassUtil;
 
 import java.util.LinkedList;
 
+/**
+ * Builder para o IOC
+ */
 public final class IOCBuilder {
     private IOCBuilder() {
     }

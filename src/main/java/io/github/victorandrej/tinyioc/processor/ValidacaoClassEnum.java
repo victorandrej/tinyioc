@@ -5,6 +5,9 @@ import io.github.victorandrej.tinyioc.steriotypes.Bean;
 
 import java.lang.reflect.Modifier;
 
+/**
+ * Enum de valiadao de bean
+ */
 public enum ValidacaoClassEnum {
     SEM_ERRO("Sem erro"),
     SEM_ANOTACAO("Classe não anotada"),

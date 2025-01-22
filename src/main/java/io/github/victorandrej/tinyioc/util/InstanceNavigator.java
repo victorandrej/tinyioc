@@ -9,6 +9,9 @@ import java.util.stream.Collectors;
 
 import static io.github.victorandrej.tinyioc.util.ClassUtil.sneakyThrow;
 
+/**
+ * Navegador de Objetos, simplifica a utilizacao do reflection
+ */
 public class InstanceNavigator {
     Object instance;
     Class<?> instanceClass;

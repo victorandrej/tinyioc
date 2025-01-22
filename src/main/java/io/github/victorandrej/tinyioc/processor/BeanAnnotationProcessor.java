@@ -23,7 +23,10 @@ import java.util.stream.IntStream;
 
 import org.objectweb.asm.Type;
 
-
+/**
+ * Processador de anotacoes {@link    io.github.victorandrej.tinyioc.steriotypes.Bean Bean}
+ * escaneia todas a classes com {@link    io.github.victorandrej.tinyioc.steriotypes.Bean Bean}
+ */
 @SupportedAnnotationTypes(Const.BEAN_ANNOTATION)
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class BeanAnnotationProcessor implements Processor {

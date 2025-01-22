@@ -5,6 +5,10 @@ import org.apache.commons.lang3.NotImplementedException;
 import java.lang.reflect.Array;
 import java.util.*;
 
+/**
+ * uma colecao proxy para iterar em varias listas com um unico for
+ * @param <T>
+ */
 public class ProxyCollection<T> implements Collection<T> {
     List<Collection<T>> collections;
 

@@ -1,5 +1,8 @@
 package io.github.victorandrej.tinyioc.config;
 
+/**
+ * Constantes
+ */
 public final  class Const {
     public static final  String DEFAULT_PACKAGE = "io.github.victorandrej.tinyioc";
     public static final String CONFIG_PACKAGE =DEFAULT_PACKAGE + ".config";

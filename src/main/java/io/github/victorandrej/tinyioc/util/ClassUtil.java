@@ -6,7 +6,9 @@ import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
+/**
+ * Utilitario de classe
+ */
 public final class ClassUtil {
     private ClassUtil() {
     }

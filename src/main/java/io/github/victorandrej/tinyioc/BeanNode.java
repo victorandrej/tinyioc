@@ -11,6 +11,9 @@ import io.github.victorandrej.tinyioc.exception.UnresolvableBeanException;
 
 import java.util.*;
 
+/**
+ * Representa um node de uma instancia de bean;
+ */
 public class BeanNode {
 
 

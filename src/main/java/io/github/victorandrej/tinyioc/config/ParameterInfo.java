@@ -9,6 +9,9 @@ import java.util.Collection;
 
 import java.util.Objects;
 
+/**
+ * Informacoes de um parametro do construtor
+ */
 public class ParameterInfo {
     private Class<?> type;
     private Class<?> collectionType;

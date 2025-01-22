@@ -8,7 +8,10 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-
+/**
+ * classe que contem em tempo de execucao todas as classes escaneadas no
+ * @see io.github.victorandrej.tinyioc.processor.BeanAnnotationProcessor
+ */
 public final class ClassScanner {
     private ClassScanner() {
     }

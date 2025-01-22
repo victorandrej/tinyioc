@@ -2,6 +2,11 @@ package io.github.victorandrej.tinyioc.collection;
 
 import java.util.*;
 
+/**
+ * Map que reflete qualquer operacao no seus parents
+ * @param <K>
+ * @param <V>
+ */
 public class ParentMap<K, V> implements Map<K, V> {
     private final Map<K, V> instance = new LinkedHashMap<>();
     private final Collection<Map<K, V>> parents;

@@ -5,6 +5,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * Set que reflete qualquer operacao nos seus parents
+ * @param <T>
+ */
 public class ParentSet<T> implements Set<T> {
     private final Set<T> instance = new HashSet<>();
     private final Collection<Set<T>> parent;
