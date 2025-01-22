@@ -243,4 +243,6 @@ public class BeanNode {
     public Class<?> getNodeClass() {
         return nodeClass;
     }
+
+
 }

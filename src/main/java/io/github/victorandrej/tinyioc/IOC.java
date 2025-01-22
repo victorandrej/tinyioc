@@ -3,6 +3,7 @@ package io.github.victorandrej.tinyioc;
 import io.github.victorandrej.tinyioc.config.*;
 import io.github.victorandrej.tinyioc.exception.*;
 
+import io.github.victorandrej.tinyioc.order.Priority;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 import io.github.victorandrej.tinyioc.steriotypes.BeanFactory;
 import io.github.victorandrej.tinyioc.util.ClassUtil;
@@ -11,6 +12,7 @@ import io.github.victorandrej.tinyioc.util.ClassUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.function.Function;
 
 
 public class IOC {
@@ -39,8 +41,9 @@ public class IOC {
     public <T> Collection<T> getInstancesCollection(Class<T> clazz) {
         return mainNode.getInstancesCollection(clazz);
     }
-    public Collection<BeanMetadado> getInstancesCollectionMetadado(Class<?> clazz){
-        return  mainNode.getInstancesCollectionMetadado(clazz);
+
+    public Collection<BeanMetadado> getInstancesCollectionMetadado(Class<?> clazz) {
+        return mainNode.getInstancesCollectionMetadado(clazz);
     }
 
 
@@ -94,35 +97,40 @@ public class IOC {
 
     }
 
-    private void resolveBeans(ConfigurationImpl configuration) {
-        var beans = configuration.getBeans();
+    enum Step {
+        FACTORY, NORMAL_BEAN
+    }
 
+    private void resolveBeans(ConfigurationImpl configuration) {
+
+        var beans = configuration.getBeans();
         LinkedList<BeanInfo> unsolvedQueue = new LinkedList<>();
         Boolean hasSolution = false;
-        Boolean firstCicle = true;
-        Boolean beforeFirst = true;
-        Boolean allowNullableInstance = false;
-        Set<Class<?>> classesPermitidas = new HashSet();
+        var step = Step.FACTORY;
+
+        Set<Class<?>> classesPermitidas = new HashSet<>();
         Set<Class<?>> factories = new HashSet<>();
 
+        Boolean optionalFactoryParam = false;
+        Class<? extends Priority> currentPriority = null;
         for (; ; ) {
             if (beans.isEmpty()) {
 
-                if (!hasSolution && !firstCicle) {
+                if (!hasSolution) {
 
-
-                    if (allowNullableInstance)
-                        //se nenhum bean foi resolvido na rodada ocorreu algum erro
+                    if (!optionalFactoryParam && Step.FACTORY.equals(step))
+                        optionalFactoryParam = true;
+                    else {
                         checkErros(unsolvedQueue);
-                    allowNullableInstance = true;
+                    }
                 }
-
 
                 if (unsolvedQueue.isEmpty())
                     break;
 
+                if (Step.FACTORY.equals(step) && factories.isEmpty())
+                    step = Step.NORMAL_BEAN;
 
-                firstCicle = false;
                 hasSolution = false;
                 beans = unsolvedQueue;
                 unsolvedQueue = new LinkedList<>();
@@ -130,49 +138,66 @@ public class IOC {
 
 
             var config = beans.pop();
+
+            if (Priority.class.isAssignableFrom(config.getBeanClass()) && unsolvedQueue.isEmpty()) {
+                if (!config.getBeanClass().equals(currentPriority))
+                    currentPriority = (Class<? extends Priority>) config.getBeanClass();
+                else {
+                    continue;
+                }
+            }
+
             Boolean isFactory = BeanFactory.class.isAssignableFrom(config.getBeanClass());
-            beforeFirst = beforeFirst ? config.getBeanClass().equals(PrimaryBean.class) ? false : true : false;
-
-            if (LastBean.class.equals(config.getBeanClass()) && !unsolvedQueue.isEmpty()) {
-                unsolvedQueue.add(config);
-                unsolvedQueue.addAll(beans);
-                beans.clear();
-                continue;
-            }
 
 
-            if (!beforeFirst && !isFactory && (firstCicle || !factories.isEmpty() && !classesPermitidas.stream().anyMatch(c -> c.isAssignableFrom(config.getBeanClass())))) {
+            var allowedClass = classesPermitidas.stream().anyMatch(c -> c.isAssignableFrom(config.getBeanClass()));
+
+            if (!allowedClass &&
+
+                    ((Step.FACTORY.equals(step)
+                            && !isFactory) || (Objects.nonNull(currentPriority) && !config.getPriority().equals(currentPriority)))
+            ) {
                 unsolvedQueue.add(config);
                 continue;
             }
 
-            if (!BeanResolveState.SOLVED.equals(config.getState()))
-                resolveBeanInstance(config, allowNullableInstance);
+            final var stepFinal = step;
+            final var unsolvedFinal = unsolvedQueue;
+            final var finalOptionalFactoryParam = optionalFactoryParam;
+            if (!BeanResolveState.SOLVED.equals(config.getState())) {
+                resolveBeanInstance(config, (p) ->
+                        (!finalOptionalFactoryParam && Step.FACTORY.equals(stepFinal))
+                                ||
+                                unsolvedFinal.stream().anyMatch(c -> c.getBeanClass().isAssignableFrom(p.isCollection() ? p.getCollectionType() : p.getType()))
+                );
 
+            }
             if (BeanResolveState.UNFINISHED.equals(config.getState())) {
+                unsolvedQueue.add(config);
 
                 if (isFactory) {
                     factories.add(config.getBeanClass());
                 }
-                classesPermitidas.addAll(config.getUnsolvedParameters().stream().map(p -> p.isCollection() ? p.getCollectionType() :p.getType()).toList());
-                unsolvedQueue.add(config);
 
+                classesPermitidas.addAll(config.getUnsolvedParameters().stream().map(p -> p.isCollection() ? p.getCollectionType() : p.getType()).toList());
             } else if (BeanResolveState.SOLVED.equals(config.getState())) {
+                if (optionalFactoryParam)
+                    optionalFactoryParam = false;
                 factories.remove(config.getBeanClass());
                 classesPermitidas.remove(config.getBeanClass());
                 hasSolution = true;
-                allowNullableInstance = false;
                 mainNode.addInstance(config.getName(), config.getBeanInstance());
                 if (config.getBeanInstance() instanceof BeanFactory factory) {
                     ConfigurationImpl configFactory = new ConfigurationImpl();
                     ClassUtil.sneakyThrow(() -> factory.create(configFactory));
                     beans.addAll(0, configFactory.getBeans());
+
                 }
 
             }
 
-
         }
+
     }
 
 
@@ -186,7 +211,7 @@ public class IOC {
         return constructors[0];
     }
 
-    private void resolveBeanInstance(BeanInfo beanInfo, Boolean allowNullableInstance) {
+    private void resolveBeanInstance(BeanInfo beanInfo, Function<ParameterInfo, Boolean> canSolveParameter) {
         var clazz = beanInfo.getBeanClass();
 
 
@@ -212,7 +237,7 @@ public class IOC {
                 beanInfo.getSolvedParameters()[paramInfo.getIndex()] = instance;
 
             } catch (NoSuchBeanException e) {
-                if (allowNullableInstance && !paramInfo.isRequired()) {
+                if (!canSolveParameter.apply(paramInfo) && !paramInfo.isRequired()) {
                     beanInfo.getSolvedParameters()[paramInfo.getIndex()] = null;
                     continue;
                 }

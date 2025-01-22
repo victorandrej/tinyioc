@@ -1,5 +1,6 @@
 package io.github.victorandrej.tinyioc.config;
 
+import io.github.victorandrej.tinyioc.order.Priority;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 
 /**
@@ -38,7 +39,7 @@ public interface Configuration {
      * @param name nome do bean
      * @return
      */
-    public Configuration bean(Object bean, String name);
+    public Configuration bean(Object bean, String name,Class<? extends Priority> priority);
 
     /**
      * Registra uma classe de bean

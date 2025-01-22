@@ -1,16 +1,12 @@
 package io.github.victorandrej.tinyioc.config;
 
-import io.github.victorandrej.tinyioc.annotation.Named;
-import io.github.victorandrej.tinyioc.annotation.Optional;
-import io.github.victorandrej.tinyioc.steriotypes.Bean;
-import io.github.victorandrej.tinyioc.util.BeanUtil;
+import io.github.victorandrej.tinyioc.annotation.Inject;
 
-import javax.naming.Name;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Proxy;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+
 import java.util.Objects;
 
 public class ParameterInfo {
@@ -41,11 +37,18 @@ public class ParameterInfo {
         this.type = parameter.getType();
 
         this.collectionType = getCollectionType(parameter);
-        Named named = parameter.getAnnotation(Named.class);
+        Inject injection = parameter.getDeclaredAnnotation(Inject.class);
 
-        this.name = Objects.nonNull(named) ? named.value() : "";
-        this.required = !parameter.isAnnotationPresent(Optional.class);
+        if(Objects.isNull(injection)){
+
+            injection = (Inject) Proxy.newProxyInstance(Inject.class.getClassLoader(),new Class[]{Inject.class},((proxy, method, args) -> method.getDefaultValue()));
+        }
+
+
+        this.name = injection.name();
+        this.required = !injection.optional();
     }
+
 
 
     public Boolean isRequired() {

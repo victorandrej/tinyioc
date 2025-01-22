@@ -7,5 +7,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
-public @interface Optional {
+public @interface Inject {
+    String name() default "";
+    boolean optional() default  false;
 }

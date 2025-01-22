@@ -3,6 +3,7 @@ package io.github.victorandrej.tinyioc;
 import io.github.victorandrej.tinyioc.config.BeanInfo;
 import io.github.victorandrej.tinyioc.config.Configuration;
 import io.github.victorandrej.tinyioc.config.ConfigurationImpl;
+import io.github.victorandrej.tinyioc.order.Priority;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 import io.github.victorandrej.tinyioc.util.ClassUtil;
 
@@ -57,8 +58,8 @@ public final class IOCBuilder {
             return this;
         }
 
-        public IOCConfigurationBuilder bean(Object instance,String name){
-            configurationImpl.bean(instance,name);
+        public IOCConfigurationBuilder bean(Object instance,String name,Class<? extends Priority> priority){
+            configurationImpl.bean(instance,name,priority);
             return  this;
         }
 

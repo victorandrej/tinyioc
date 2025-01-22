@@ -1,11 +1,13 @@
 package io.github.victorandrej.tinyioc;
 
 
-import io.github.victorandrej.tinyioc.annotation.Optional;
+import io.github.victorandrej.tinyioc.annotation.Inject;
+
 import io.github.victorandrej.tinyioc.config.BeanMetadado;
 import io.github.victorandrej.tinyioc.config.Configuration;
 import io.github.victorandrej.tinyioc.exception.*;
 
+import io.github.victorandrej.tinyioc.order.Ring0;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 import io.github.victorandrej.tinyioc.steriotypes.BeanFactory;
 import io.github.victorandrej.tinyioc.util.ClassUtilTeste;
@@ -133,7 +135,7 @@ public class IOCTest {
     public void deve_retornar_erro_caso_houver_cadastro_duplicado() {
 
         assertThrows(DuplicatedBeanException.class, () -> {
-            IOCBuilder.configure().bean(new NamedBean(), NOME_BEAN).bean(new NamedBean(), NOME_BEAN).build();
+            IOCBuilder.configure().bean(new NamedBean(), NOME_BEAN, Ring0.class).bean(new NamedBean(), NOME_BEAN,Ring0.class).build();
         });
 
     }
@@ -276,7 +278,7 @@ public class IOCTest {
     @Bean
     public  static class ClasseComParametroOpcional{
         public ClasseTeste clazz;
-        public  ClasseComParametroOpcional (@Optional ClasseTeste e){this.clazz = e;}
+        public  ClasseComParametroOpcional (@Inject(optional = true) ClasseTeste e){this.clazz = e;}
     }
 
     @Bean

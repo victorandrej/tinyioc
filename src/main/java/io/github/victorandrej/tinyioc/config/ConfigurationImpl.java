@@ -2,6 +2,7 @@ package io.github.victorandrej.tinyioc.config;
 
 import io.github.victorandrej.tinyioc.config.scan.ClassScanner;
 import io.github.victorandrej.tinyioc.exception.InvalidClassException;
+import io.github.victorandrej.tinyioc.order.Priority;
 import io.github.victorandrej.tinyioc.steriotypes.Bean;
 import io.github.victorandrej.tinyioc.util.BeanUtil;
 
@@ -53,22 +54,24 @@ public class ConfigurationImpl implements Configuration {
     }
 
     public Configuration bean(Class<?> bean, String name) {
-        testClass(bean);
-        return bean(new BeanInfo(BeanUtil.resolveBeanName(name, bean), bean) {{
+        Bean b = testClass(bean);
+        return bean(new BeanInfo(BeanUtil.resolveBeanName(name, bean), bean,b.priority()) {{
             this.setState(BeanResolveState.NEW);
         }});
     }
 
-    public Configuration bean(Object bean, String name) {
 
-        return bean(new BeanInfo(BeanUtil.resolveBeanName(name, bean.getClass()), bean) {{
+
+    public Configuration bean(Object bean, String name, Class<? extends Priority> priority) {
+
+        return bean(new BeanInfo(BeanUtil.resolveBeanName(name, bean.getClass()), bean,priority) {{
             setState(BeanResolveState.SOLVED);
         }});
     }
 
     public Configuration bean(Object bean) {
         Bean b = testClass(bean.getClass());
-        return bean(bean, b.beanName());
+        return bean(bean, b.beanName(),b.priority());
     }
 
     @Override
@@ -79,7 +82,7 @@ public class ConfigurationImpl implements Configuration {
 
 
     public LinkedList<BeanInfo> getBeans() {
-        return beans;
+        return  new LinkedList<>(beans);
     }
 
     public Boolean getScanNonUsedBeans() {
